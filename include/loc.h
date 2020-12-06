@@ -10,4 +10,6 @@ typedef struct {
     uint32_t last_column;
 } LocType;
 
+LocType concat(LocType, LocType);
+
 #endif
