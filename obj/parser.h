@@ -107,14 +107,10 @@ union YYSTYPE
   double dval;
 
   Node *node;
-  IDList *id_list;
-  VarDescription *var_description;
   VarType *var_type;
   OpType op_type;
-  Range range;
-  StmtList *stmt_list;
 
-#line 118 "obj/parser.h"
+#line 114 "obj/parser.h"
 
 };
 typedef union YYSTYPE YYSTYPE;

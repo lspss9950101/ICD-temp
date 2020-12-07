@@ -45,16 +45,12 @@ Node *root = NULL;
   double dval;
 
   Node *node;
-  IDList *id_list;
-  VarDescription *var_description;
   VarType *var_type;
   OpType op_type;
-  Range range;
-  StmtList *stmt_list;
 }
 
 %type <node> prog
-%type <id_list> identifier_list
+%type <node> identifier_list
 %type <node> declarations
 %type <var_type> type
 %type <var_type> standard_type
@@ -64,7 +60,7 @@ Node *root = NULL;
 %type <node> arguments
 %type <node> parameter_list
 %type <node> compound_statement
-%type <stmt_list> statement_list
+%type <node> statement_list
 %type <node> statement
 %type <node> variable
 %type <node> tail
@@ -86,50 +82,45 @@ prog : PROGRAM IDENTIFIER LPAREN identifier_list RPAREN SEMICOLON
      subprogram_declarations
      compound_statement
      DOT { 
-        $$ = malloc(sizeof(Node));
+        root = $$ = malloc(sizeof(Node));
         $$->nt = ProgNode;
         $$->loc = concat(@1, @10);
         $$->prog_node_attr.id = $<text>2;
-        $$->prog_node_attr.ret_type = NULL;
+        $$->prog_node_attr.type = malloc(sizeof(VarType));
+        $$->prog_node_attr.type->type = VAR_FUNCTION;
+        $$->prog_node_attr.type->ret_type = NONE;
+        $$->prog_node_attr.type->args = $<node>4;
 
-        Node *ids_node = malloc(sizeof(Node));
-        ids_node->nt = IDListNode;
-        ids_node->loc = $<id_list>4->loc;
-        ids_node->id_list = $<id_list>4;
+        $$->prog_node_attr.declarations = $<node>7;
+        $$->prog_node_attr.subprogram_declarations = $<node>8;
+        $$->prog_node_attr.compound_statement = $<node>9;
 
-        addChildNode($$, &$$->prog_node_attr.args, ids_node);
-        addChildNode($$, &$$->prog_node_attr.declarations, $<node>7);
-        addChildNode($$, &$$->prog_node_attr.subprogram_declarations, $<node>8);
-        addChildNode($$, &$$->prog_node_attr.compound_statement, $<node>9);
-
-        root = $$;
-        printAST(root, 0);
+        YYACCEPT;
      };
 
 identifier_list : IDENTIFIER {
-        $$ = malloc(sizeof(IDList));
-        $$->id = $<text>1;
+        $$ = malloc(sizeof(Node));
+        $$->nt = DeclarationNode;
         $$->loc = @1;
-        $$->next = NULL;
+        $$->declaration_node_attr.id = $<text>1;
+        $$->declaration_node_attr.next = NULL;
     }
     | IDENTIFIER COMMA identifier_list {
-        $$ = malloc(sizeof(IDList));
-        $$->id = $<text>1;
-        $$->loc = concat(@1, $<id_list>3->loc);
-        $$->next = $<id_list>3;
+        $$ = malloc(sizeof(Node));
+        $$->nt = DeclarationNode;
+        $$->loc = @1;
+        $$->declaration_node_attr.id = $<text>1;
+        $$->declaration_node_attr.next = $<node>3;
     };
 
 declarations : VAR identifier_list COLON type SEMICOLON declarations {
-        $$ = malloc(sizeof(Node));
-        $$->nt = DeclarationNode;
-        $$->declaration_node_attr.type = $<var_type>4;
-        $$->declaration_node_attr.list = $<id_list>2;
-        if($<node>6 == NULL) {
-            $$->loc = concat(@1, @5);
-        } else {
-            $$->loc = concat(@1, $<node>6->loc);
-            addChildNode($$, &$$->declaration_node_attr.next, $<node>6);
+        $$ = $<node>2;
+        Node *last;
+        for(Node *cur = $$; cur != NULL; cur = cur->declaration_node_attr.next) {
+            cur->declaration_node_attr.type = $<var_type>4;
+            if(cur->declaration_node_attr.next == NULL) last = cur;
         }
+        last->declaration_node_attr.next = $<node>6;
     }
     | { $$ = NULL; };
 
@@ -140,7 +131,9 @@ type : standard_type {
         $$ = malloc(sizeof(VarType));
         $$->loc = concat(@1, $<var_type>8->loc);
         $$->type = VAR_ARRAY;
-        $$->of_type = $<var_type>6;
+        $$->of_type = $<var_type>8;
+        $$->begin = $<node>3;
+        $$->end = $<node>5;
     };
 
 standard_type : INTEGER {
@@ -162,14 +155,9 @@ standard_type : INTEGER {
 subprogram_declarations : subprogram_declaration SEMICOLON subprogram_declarations {
         $$ = malloc(sizeof(Node));
         $$->nt = SubprogramDeclarationNode;
-        addChildNode($$, &$$->subprogram_declaration_node_attr.subprogram, $<node>1);
-        if($<node>3 == NULL) {
-            $$->loc = concat($<node>1->loc, @2);
-            $$->subprogram_declaration_node_attr.next = NULL;
-        } else {
-            $$->loc = concat($<node>1->loc, $<node>3->loc);
-            addChildNode($$, &$$->subprogram_declaration_node_attr.next, $<node>3);
-        }
+        $$->loc = $<node>1->loc;
+        $$->subprogram_declaration_node_attr.subprogram = $<node>1;
+        $$->subprogram_declaration_node_attr.next = $<node>3;
     }
     | { $$ = NULL; };
 
@@ -179,99 +167,124 @@ subprogram_declaration : subprogram_head
                        compound_statement {
         $$ = $<node>1;
         $$->loc = concat($$->loc, $<node>4->loc);
-        addChildNode($$, &$$->prog_node_attr.declarations, $<node>2);
-        addChildNode($$, &$$->prog_node_attr.subprogram_declarations, $<node>3);
-        addChildNode($$, &$$->prog_node_attr.compound_statement, $<node>4);
+        $$->prog_node_attr.declarations = $<node>2;
+        $$->prog_node_attr.subprogram_declarations = $<node>3;
+        $$->prog_node_attr.compound_statement = $<node>4;
     };
 
 subprogram_head : FUNCTION IDENTIFIER arguments COLON standard_type SEMICOLON {
         $$ = malloc(sizeof(Node));
         $$->nt = SubprogramDeclarationNode;
-        $$->loc = concat(@1, @6);
+        $$->loc = concat(@2, @6);
         $$->prog_node_attr.id = $<text>2;
-        $$->prog_node_attr.ret_type = $<var_type>4;
-        addChildNode($$, &$$->prog_node_attr.args, $<node>3);
+        
+        $$->prog_node_attr.type = malloc(sizeof(VarType));
+        $$->prog_node_attr.type->type = VAR_FUNCTION;
+        $$->prog_node_attr.type->ret_type = $<var_type>5;
+        $$->prog_node_attr.type->args = $<node>3;
     }
     | PROCEDURE IDENTIFIER arguments SEMICOLON {
         $$ = malloc(sizeof(Node));
         $$->nt = SubprogramDeclarationNode;
-        $$->loc = concat(@1, @4);
+        $$->loc = concat(@2, @4);
         $$->prog_node_attr.id = $<text>2;
-        $$->prog_node_attr.ret_type = NULL;
-        addChildNode($$, &$$->prog_node_attr.args, $<node>3);
+
+        $$->prog_node_attr.type = malloc(sizeof(VarType));
+        $$->prog_node_attr.type->type = VAR_FUNCTION;
+        $$->prog_node_attr.type->ret_type = NULL;
+        $$->prog_node_attr.type->args = $<node>3;
     };
 
 arguments : LPAREN parameter_list RPAREN {
         $$ = $<node>2;
-        $$->loc = concat(@1, @3);
     }
     | {$$ = NULL;};
 
 parameter_list : optional_var identifier_list COLON type {
-        $$ = malloc(sizeof(Node));
-        $$->nt = DeclarationNode;
-        $$->loc = concat(@1, $<var_type>4->loc);
-        $$->declaration_node_attr.type = $<var_type>4;
-        $$->declaration_node_attr.list = $<id_list>2;
-        $$->declaration_node_attr.next = NULL;
+        $$ = $<node>2;
+        for(Node *cur = $$; cur != NULL; cur = cur->declaration_node_attr.next) {
+            cur->declaration_node_attr.type = $<var_type>4;
+        }
     }
     | optional_var identifier_list COLON type SEMICOLON parameter_list {
-        $$ = malloc(sizeof(Node));
-        $$->nt = DeclarationNode;
-        $$->loc = concat(@1, $<var_type>4->loc);
-        $$->declaration_node_attr.type = $<var_type>4;
-        $$->declaration_node_attr.list = $<id_list>2;
-        addChildNode($$, &$$->declaration_node_attr.next, $<node>6);
+        $$ = $<node>2;
+        Node *last;
+        for(Node *cur = $$; cur != NULL; cur = cur->declaration_node_attr.next) {
+            cur->declaration_node_attr.type = $<var_type>4;
+            if(cur->declaration_node_attr.next == NULL) last = cur;
+        }
+        last->declaration_node_attr.next = $<node>6;
     };
 
 optional_var : VAR
-             |
-             ;
+    | ;
 
 compound_statement : PBEGIN statement_list END {
     $$ = malloc(sizeof(Node));
     $$->nt = CompoundStatementListNode;
     $$->loc = concat(@1, @3);
-    $$->compound_stmt_node_attr.stmts = $<stmt_list>2;
+    $$->compound_stmt_node_attr.stmts = $<node>2;
 }
 
 statement_list : statement {
-        if($<node>1 == NULL) {
-            $$ = NULL;
-        } else {
-            $$ = malloc(sizeof(StmtList));
-            $$->loc = $<node>1->loc;
-            $$->stmt = $<node>1;
-            $$->next = NULL;
-        }
+        $$ = $<node>1;
     }
     | statement SEMICOLON statement_list {
-        $$ = malloc(sizeof(StmtList));
-        $$->loc = $<node>1->loc;
-        $$->stmt = $<node>1;
-        $$->next = $<stmt_list>3;
+        $$ = $<node>1;
+        $$->compound_stmt_node_attr.next = $<node>3;
     };
 
 statement : variable ASSIGNMENT expression {
+        Node *expr= malloc(sizeof(Node));
+        createBinaryExpr(OP_ASSIGN, expr, $<node>1, $<node>3);
+        expr->loc = concat($<node>1->loc, $<node>3->loc);
+
         $$ = malloc(sizeof(Node));
-        createBinaryExpr(OP_ASSIGN, $$, $<node>1, $<node>3);
-        $$->loc = concat($<node>1->loc, $<node>3->loc);
+        $$->nt = CompoundStatementListNode;
+        $$->loc = expr->loc;
+        $$->compound_stmt_node_attr.stmts = expr;
+        $$->compound_stmt_node_attr.next = NULL;
     }
     | procedure_statement {
-        $$ = $<node>1;
+        $$ = malloc(sizeof(Node));
+        $$->nt = CompoundStatementListNode;
+        $$->loc = $<node>1->loc;
+        $$->compound_stmt_node_attr.stmts = $<node>1;
+        $$->compound_stmt_node_attr.next = NULL;
     }
     | compound_statement {
         $$ = $<node>1;
     }
     | IF expression THEN statement ELSE statement {
+        Node *expr = malloc(sizeof(Node));
+        expr->nt = IfNode;
+        expr->if_node_attr.condition = $<node>2;
+        expr->if_node_attr.statement = $<node>4;
+        expr->if_node_attr.else_statement = $<node>6;
+
+        if($<node>6 == NULL) expr->loc = concat(@1, @5);
+        else expr->loc = concat(@1, $<node>6->loc);
+
         $$ = malloc(sizeof(Node));
-        createIfStatement($$, $<node>2, $<node>4, $<node>6);
-        $$->loc = concat(@1, $<node>6->loc);
+        $$->nt = CompoundStatementListNode;
+        $$->loc = expr->loc;
+        $$->compound_stmt_node_attr.stmts = expr;
+        $$->compound_stmt_node_attr.next = NULL;
     }
     | WHILE expression DO statement {
+        Node *expr = malloc(sizeof(Node));
+        expr->nt = WhileNode;
+        expr->while_node_attr.condition = $<node>2;
+        expr->while_node_attr.statement = $<node>4;
+        
+        if($<node>4 == NULL) expr->loc = concat(@1, @3);
+        else expr->loc = concat(@1, $<node>4->loc);
+
         $$ = malloc(sizeof(Node));
-        createWhileLoop($$, $<node>2, $<node>4);
-        $$->loc = concat(@1, $<node>4->loc);
+        $$->nt = CompoundStatementListNode;
+        $$->loc = expr->loc;
+        $$->compound_stmt_node_attr.stmts = expr;
+        $$->compound_stmt_node_attr.next = NULL;
     }
     | { $$ = NULL; };
 
@@ -280,7 +293,7 @@ variable : IDENTIFIER tail {
         $$->nt = ExprNode;
         $$->loc = @1;
         $$->expression.type = Ref;
-        $$->expression.var_id = $<text>1;
+        $$->expression.ref.id = $<text>1;
         $$->expression.next = NULL;
 
         if($<node>2 != NULL) {
@@ -300,8 +313,8 @@ procedure_statement : IDENTIFIER {
         $$->nt = ExprNode;
         $$->loc = @1;
         $$->expression.type = Func;
-        $$->expression.id = $<text>1;
-        $$->expression.args = NULL;
+        $$->expression.func.id = $<text>1;
+        $$->expression.func.args = NULL;
         $$->expression.next = NULL;
     }
     | IDENTIFIER LPAREN expression_list RPAREN {
@@ -309,8 +322,8 @@ procedure_statement : IDENTIFIER {
         $$->nt = ExprNode;
         $$->loc = concat(@1, @4);
         $$->expression.type = Func;
-        $$->expression.id = $<text>1;
-        $$->expression.args = $<node>3;
+        $$->expression.func.id = $<text>1;
+        $$->expression.func.args = $<node>3;
         $$->expression.next = NULL;
     };
 
@@ -319,7 +332,6 @@ expression_list : expression {
     }
     | expression COMMA expression_list {
         $$ = $<node>1;
-        $$->loc = concat($<node>1->loc, $<node>3->loc);
         $$->expression.next = $<node>3;
     };
 
@@ -329,12 +341,12 @@ expression : boolexpression {
     | boolexpression AND boolexpression {
         $$ = malloc(sizeof(Node));
         createBinaryExpr(OP_AND, $$, $<node>1, $<node>3);
-        $$->loc = concat($<node>1->loc, $<node>3->loc);
+        $$->loc = @2;
     }
     | boolexpression OR boolexpression {
         $$ = malloc(sizeof(Node));
         createBinaryExpr(OP_OR, $$, $<node>1, $<node>3);
-        $$->loc = concat($<node>1->loc, $<node>3->loc);
+        $$->loc = @2;
     };
 
 
@@ -344,7 +356,7 @@ boolexpression : simple_expression {
     | simple_expression relop simple_expression {
         $$ = malloc(sizeof(Node));
         createBinaryExpr($<op_type>2, $$, $<node>1, $<node>3);
-        $$->loc = concat($<node>1->loc, $<node>3->loc);
+        $$->loc = @2;
     };
 
 simple_expression : term {
@@ -353,7 +365,7 @@ simple_expression : term {
     | simple_expression addop term {
         $$ = malloc(sizeof(Node));
         createBinaryExpr($<op_type>2, $$, $<node>1, $<node>3);
-        $$->loc = concat($<node>1->loc, $<node>3->loc);
+        $$->loc = @2;
     };
 
 term : factor {
@@ -362,7 +374,7 @@ term : factor {
     | term mulop factor {
         $$ = malloc(sizeof(Node));
         createBinaryExpr($<op_type>2, $$, $<node>1, $<node>3);
-        $$->loc = concat($<node>1->loc, $<node>3->loc);
+        $$->loc = @2;
     };
 
 factor : variable {
@@ -371,10 +383,10 @@ factor : variable {
     | IDENTIFIER LPAREN expression_list RPAREN {
         $$ = malloc(sizeof(Node));
         $$->nt = ExprNode;
-        $$->loc = concat(@1, @4);
+        $$->loc = @1;
         $$->expression.type = Func;
-        $$->expression.id = $<text>1;
-        $$->expression.args = $<node>3;
+        $$->expression.func.id = $<text>1;
+        $$->expression.func.args = $<node>3;
         $$->expression.next = NULL;
     }
     | num {
@@ -385,8 +397,8 @@ factor : variable {
         $$->nt = ExprNode;
         $$->loc = @1;
         $$->expression.type = Primary;
-        $$->expression.var_type = VAR_TEXT;
-        $$->expression.text = $<text>1;
+        $$->expression.primary.var_type = VAR_TEXT;
+        $$->expression.primary.text = $<text>1;
         $$->expression.next = NULL;
     }
     | LPAREN expression RPAREN {
@@ -396,20 +408,16 @@ factor : variable {
     | NOT factor {
         $$ = malloc(sizeof(Node));
         createUnaryExpr(OP_NOT, $$, $<node>2);
-        $$->loc = concat(@1, $<node>1->loc);
+        $$->loc = @1;
     }
     | SUBOP factor {
         $$ = malloc(sizeof(Node));
         createUnaryExpr(OP_NEG, $$, $<node>2);
-        $$->loc = concat(@1, $<node>1->loc);
+        $$->loc = @1;
     };
 
-addop : ADDOP {
-        $$ = OP_ADD;
-    }
-    | SUBOP {
-        $$ = OP_SUB;
-    };
+addop : ADDOP { $$ = OP_ADD; }
+    | SUBOP { $$ = OP_SUB; };
 
 mulop : MULOP { $$ = OP_MUL; }
     | DIVOP { $$ = OP_DIV; };
@@ -426,8 +434,8 @@ num : INTEGERNUM {
         $$->nt = ExprNode;
         $$->loc = @1;
         $$->expression.type = Primary;
-        $$->expression.var_type = VAR_INT;
-        $$->expression.val = $<val>1;
+        $$->expression.primary.var_type = VAR_INT;
+        $$->expression.primary.val = $<val>1;
         $$->expression.next = NULL;
     }
     | REALNUMBER {
@@ -435,8 +443,8 @@ num : INTEGERNUM {
         $$->nt = ExprNode;
         $$->loc = @1;
         $$->expression.type = Primary;
-        $$->expression.var_type = VAR_REAL;
-        $$->expression.dval = $<dval>1;
+        $$->expression.primary.var_type = VAR_REAL;
+        $$->expression.primary.dval = $<dval>1;
         $$->expression.next = NULL;
     }
     | SCIENTIFIC {
@@ -444,8 +452,8 @@ num : INTEGERNUM {
         $$->nt = ExprNode;
         $$->loc = @1;
         $$->expression.type = Primary;
-        $$->expression.var_type = VAR_REAL;
-        $$->expression.dval = $<dval>1;
+        $$->expression.primary.var_type = VAR_REAL;
+        $$->expression.primary.dval = $<dval>1;
         $$->expression.next = NULL;
     };
 
@@ -469,5 +477,8 @@ int main(int argc, const char *argv[]) {
 
     yyin = fp;
     yyparse();
+    
+    //traverseAST(root);
+    printAST(root, 0);
     return 0;
 }

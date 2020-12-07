@@ -2,19 +2,42 @@
 #define __SYM_TAB_H__
 
 #include <types.h>
+#include <ast.h>
+#include <info.h>
+#include <string.h>
 
-typedef struct {
-    VarEnum type;
+typedef struct SymEntry {
+    VarType *type;
     int scope;
     char *id;
-    union {
-        Range array_range[8];
-        VarEnum func_args[8];
-    };
+    struct SymEntry *next;
+    int func_set;
 } SymEntry;
 
-SymEntry *sym_table[128];
-int sym_entry_count;
-int scope_level;
+int checkTable(SymEntry*, char*, int);
+
+int arrayTypeCmp(VarType*, VarType*);
+
+VarType* getVarType(SymEntry*, char*);
+
+VarType* getPrimaryType(VarType*);
+
+void setFunc(SymEntry*, char*);
+
+int isFuncSet(SymEntry*, char*);
+
+int insertEntry(SymEntry**, char*, VarType*, int);
+
+int deleteEntry(SymEntry**, int);
+
+void printSymTab(SymEntry *);
+
+void getVarName(VarType*, char*);
+
+void traverseAST(Node*);
+
+VarType* _traverseAST(SymEntry**, Node*, int, int);
+
+char* getOpTypeStr(OpType);
 
 #endif

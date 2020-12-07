@@ -1,25 +1,20 @@
 #include <ast.h>
 
-void addChildNode(Node* parent, Node** parent_attr, Node* child) {
-    *parent_attr = child;
-    if(child != NULL) child->parent = parent;
-}
-
 void createBinaryExpr(OpType op, Node* parent, Node* left, Node* right) {
     parent->nt = ExprNode;
     parent->expression.type = Binary;
-    parent->expression.binary_op = op;
+    parent->expression.binary.op = op;
+    parent->expression.binary.left = left;
+    parent->expression.binary.right = right;
     parent->expression.next = NULL;
-    addChildNode(parent, &(parent->expression.left), left);
-    addChildNode(parent, &(parent->expression.right), right);
 }
 
 void createUnaryExpr(OpType op, Node* parent, Node* oprand) {
     parent->nt = ExprNode;
     parent->expression.type = Unary;
-    parent->expression.unary_op = op;
+    parent->expression.unary.op = op;
+    parent->expression.unary.oprand = oprand;
     parent->expression.next = NULL;
-    addChildNode(parent, &(parent->expression.oprand), oprand);
 }
 
 Node* createRefStrip(Node* id_ref, Node* expr_list) {
@@ -27,48 +22,18 @@ Node* createRefStrip(Node* id_ref, Node* expr_list) {
     while(expr_list != NULL) {
         Node *new_node = malloc(sizeof(Node));
         new_node->nt = ExprNode;
-        new_node->loc = concat(top_node->loc, expr_list->loc);
+        new_node->loc = expr_list->loc;
         new_node->expression.type = Binary;
-        new_node->expression.binary_op = OP_ARRAY_ACCESS;
+        new_node->expression.binary.op = OP_ARRAY_ACCESS;
+        new_node->expression.binary.left = top_node;
+        new_node->expression.binary.right = expr_list;
         new_node->expression.next = NULL;
-        addChildNode(new_node, &new_node->expression.left, top_node);
-        addChildNode(new_node, &new_node->expression.right, expr_list);
 
         top_node = new_node;
         expr_list = expr_list->expression.next;
     }
 
     return top_node;
-}
-
-void createIfStatement(Node* tgt, Node* condition, Node* statement, Node* else_statement) {
-    tgt->nt = IfNode;
-    addChildNode(tgt, &tgt->if_node_attr.condition, condition);
-    addChildNode(tgt, &tgt->if_node_attr.statement, statement);
-    addChildNode(tgt, &tgt->if_node_attr.else_statement, else_statement);
-}
-
-void createWhileLoop(Node* tgt, Node* condition, Node* statement) {
-    tgt->nt = WhileNode;
-    addChildNode(tgt, &tgt->while_node_attr.condition, condition);
-    addChildNode(tgt, &tgt->while_node_attr.statement, statement);
-}
-
-void createStmtList(StmtList* list, Node* stmt) {
-    list->next = NULL;
-    list->stmt = stmt;
-}
-
-void createDeclaration(Node* tgt, VarDescription* entry) {
-    tgt->nt = DeclarationNode;
-    tgt->declaration_node_attr.type = entry->type;
-    tgt->declaration_node_attr.list = entry->list;
-    tgt->declaration_node_attr.next = NULL;
-}
-
-void appendStmt(StmtList* tgt, StmtList* list, StmtList *entry) {
-    tgt->stmt = entry->stmt;
-    tgt->next = list;
 }
 
 char* op_mapping(OpType type) {
@@ -113,18 +78,11 @@ void printAST(Node *node, int level) {
         return;
     }
     switch((int)node->nt) {
-        case NullNode:{
-            for(int i = 0; i < level; i++) printf("  ");
-            printf("Empty\n");
-            break;
-        }
         case ProgNode:{
             for(int i = 0; i < level; i++) printf("  ");
             printf("ProgNode %s, ret_type: ", node->prog_node_attr.id);
-            printVarType(node->prog_node_attr.ret_type);
-            printf("\nArgs:\n");
-            printAST(node->prog_node_attr.args, level+1);
-            printf("Declaration:\n");
+            printVarType(node->prog_node_attr.type);
+            printf("\nDeclaration:\n");
             printAST(node->prog_node_attr.declarations, level+1);
             printf("Subprogram:\n");
             printAST(node->prog_node_attr.subprogram_declarations, level+1);
@@ -132,22 +90,12 @@ void printAST(Node *node, int level) {
             printAST(node->prog_node_attr.compound_statement, level+1);
             break;
         }
-        case IDListNode:{
-            for(IDList *cur = node->id_list; cur != NULL; cur = cur->next) {
-                for(int i = 0; i < level; i++) printf("  ");
-                printf("%s\n", cur->id);
-            }
-            break;
-        }
         case DeclarationNode:{
             for(struct Node *cur = node; cur != NULL; cur = cur->declaration_node_attr.next) {
                 for(int i = 0; i < level; i++) printf("  ");
+                printf("%s : ", cur->declaration_node_attr.id);
                 printVarType(cur->declaration_node_attr.type);
                 printf("\n");
-                for(IDList *cur_l = cur->declaration_node_attr.list; cur_l != NULL; cur_l = cur_l->next) {
-                    for(int i = 0; i < level+1; i++) printf("  ");
-                    printf("%s\n", cur_l->id);
-                }
             }
             break;
         }
@@ -155,11 +103,8 @@ void printAST(Node *node, int level) {
             for(struct Node *cur = node; cur != NULL; cur = cur->subprogram_declaration_node_attr.next) {
                 for(int i = 0; i < level; i++) printf("  ");
                 printf("SubprogNode ret_type: ");
-                printVarType(cur->subprogram_declaration_node_attr.subprogram->prog_node_attr.ret_type);
+                printVarType(cur->subprogram_declaration_node_attr.subprogram->prog_node_attr.type);
                 printf("\n");
-                for(int i = 0; i < level; i++) printf("  ");
-                printf("Args:\n");
-                printAST(cur->subprogram_declaration_node_attr.subprogram->prog_node_attr.args, level+1);
                 for(int i = 0; i < level; i++) printf("  ");
                 printf("Declaration:\n");
                 printAST(cur->subprogram_declaration_node_attr.subprogram->prog_node_attr.declarations, level+1);
@@ -173,8 +118,8 @@ void printAST(Node *node, int level) {
             break;
         }
         case CompoundStatementListNode:{
-            for(StmtList *stmt = node->compound_stmt_node_attr.stmts; stmt != NULL; stmt = stmt->next) {
-                printAST(stmt->stmt, level+1);
+            for(Node *stmt = node->compound_stmt_node_attr.stmts; stmt != NULL; stmt = stmt->compound_stmt_node_attr.next) {
+                printAST(stmt->compound_stmt_node_attr.stmts, level+1);
             }
             break;
         }
@@ -183,33 +128,33 @@ void printAST(Node *node, int level) {
                 switch(cur->expression.type) {
                     case Primary:
                         for(int i = 0; i < level; i++) printf("  ");
-                        if(cur->expression.var_type == VAR_INT) {
-                            printf("int: %d\n", cur->expression.val);
-                        } else if(cur->expression.var_type == VAR_REAL) {
-                            printf("real: %f\n", cur->expression.dval);
+                        if(cur->expression.primary.var_type == VAR_INT) {
+                            printf("int: %d\n", cur->expression.primary.val);
+                        } else if(cur->expression.primary.var_type == VAR_REAL) {
+                            printf("real: %f\n", cur->expression.primary.dval);
                         } else {
-                            printf("text: %s\n", cur->expression.text);
+                            printf("text: %s\n", cur->expression.primary.text);
                         }
                         break;
                     case Ref:
                         for(int i = 0; i < level; i++) printf("  ");
-                        printf("var: %s\n", cur->expression.var_id);
+                        printf("var: %s %d,%d\n", cur->expression.ref.id, cur->loc.first_line, cur->loc.first_column);
                         break;
                     case Unary:
                         for(int i = 0; i < level; i++) printf("  ");
-                        printf("%s\n", cur->expression.unary_op == OP_NOT ? "NOT" : "NEG");
-                        printAST(cur->expression.oprand, level+1);
+                        printf("%s\n", cur->expression.unary.op == OP_NOT ? "NOT" : "NEG");
+                        printAST(cur->expression.unary.oprand, level+1);
                         break;
                     case Binary:
                         for(int i = 0; i < level; i++) printf("  ");
-                        printf("%s\n", op_mapping(cur->expression.binary_op));
-                        printAST(cur->expression.left, level+1);
-                        printAST(cur->expression.right, level+1);
+                        printf("%s\n", op_mapping(cur->expression.binary.op));
+                        printAST(cur->expression.binary.left, level+1);
+                        printAST(cur->expression.binary.right, level+1);
                         break;
                     case Func:
                         for(int i = 0; i < level; i++) printf("  ");
-                        printf("FUNC %s\n", cur->expression.id);
-                        printAST(cur->expression.args, level+1);
+                        printf("FUNC %s\n", cur->expression.func.id);
+                        printAST(cur->expression.func.args, level+1);
                         break;
                 }
             }
@@ -251,7 +196,7 @@ void printVarType(VarType *type) {
             printf("void");
             break;
         case VAR_ARRAY:
-            printf("array of ");
+            printf("array [%d..%d] of ", type->begin->expression.primary.val, type->end->expression.primary.val);
             printVarType(type->of_type);
             break;
         case VAR_INT:
@@ -264,7 +209,14 @@ void printVarType(VarType *type) {
             printf("text");
             break;
         case VAR_FUNCTION:
-            printf("func");
+            printf("func ret_type: ");
+            printVarType(type->ret_type);
+            printf(" args: ");
+            for(Node* cur = type->args; cur != NULL; cur = cur->declaration_node_attr.next) {
+                printf("%s:", cur->declaration_node_attr.id);
+                printVarType(cur->declaration_node_attr.type);
+                printf(" ");
+            }
             break;
     }
 }

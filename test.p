@@ -1,20 +1,11 @@
 #pragma list off
 PROGRAM aaa(a, b, c);
-VAR d, e: INTEGER;
+VAR d, e: ARRAY[1..10] of ARRAY[10..1] of INTEGER;
 VAR f, g: REAL;
 
+PROCEDURE ss(a,b:INTEGER; c:REAL);
 BEGIN
-    IF a+b<c[3]
-    THEN
-        f:=a+3
-    ELSE
-        f:=a*5;
-    
-    WHILE a>b
-    DO BEGIN
-        a:=b;
-        b:=c;
-        c:=d;
-    END
+END;
 
+BEGIN
 END.

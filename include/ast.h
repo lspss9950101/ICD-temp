@@ -9,14 +9,13 @@
 #include <stdio.h>
 
 typedef enum{
-  NullNode,
   ProgNode,
-  IDListNode,
+  SubprogNode,
+  ArgumentNode,
   DeclarationNode,
   SubprogramDeclarationNode,
   CompoundStatementListNode,
   ExprNode,
-  ExprListNode,
   IfNode,
   WhileNode
 } NodeType;
@@ -29,42 +28,32 @@ typedef enum {
   Func
 } ExprType;
 
-struct Node;
-
-typedef struct IDList {
-  LocType loc;
-  char *id;
-  struct IDList *next;
-} IDList;
-
-typedef struct StmtList {
-  LocType loc;
-  struct Node *stmt;
-  struct StmtList *next;
-} StmtList;
+typedef struct Node Node;
 
 typedef struct VarType {
   LocType loc;
   VarEnum type;
-  struct VarType* of_type;
-  struct Node *begin, *end;
+  union {
+    struct {
+      struct VarType* of_type;
+      struct Node *begin, *end;
+    };
+    struct {
+      struct VarType* ret_type;
+      struct Node *args;
+    };
+  };
 } VarType;
-
-typedef struct VarDescription {
-  LocType loc;
-  VarType *type;
-  IDList *list;
-} VarDescription;
 
 struct ProgNodeAttr {
   char *id;
-  VarType *ret_type;
-  struct Node *args, *declarations, *subprogram_declarations, *compound_statement;
+  VarType *type;
+  struct Node *declarations, *subprogram_declarations, *compound_statement;
 };
 
 struct DeclarationNodeAttr {
   VarType *type;
-  IDList *list;
+  char *id;
   struct Node *next;
 };
 
@@ -74,7 +63,8 @@ struct SubprogDeclarationNodeAttr {
 };
 
 struct CompoundStmtNodeAttr {
-  StmtList *stmts;
+  Node *stmts;
+  Node *next;
 };
 
 struct ExprNodeAttr {
@@ -87,20 +77,22 @@ struct ExprNodeAttr {
         char *text;
         double dval;
       };
-    };
-    char *var_id;
+    } primary;
     struct {
-      OpType unary_op;
+      char *id;
+    } ref;
+    struct {
+      OpType op;
       struct Node *oprand;
-    };
+    } unary;
     struct {
-      OpType binary_op;
+      OpType op;
       struct Node *left, *right;
-    };
+    } binary;
     struct {
       char *id;
       struct Node *args;
-    };
+    } func;
   };
   struct Node *next;
 };
@@ -117,10 +109,8 @@ typedef struct Node {
   NodeType nt;
   LocType loc;
 
-  struct Node *parent;
   union {
     struct ProgNodeAttr prog_node_attr;
-    IDList *id_list;
     struct DeclarationNodeAttr declaration_node_attr;
     struct SubprogDeclarationNodeAttr subprogram_declaration_node_attr;
     struct CompoundStmtNodeAttr compound_stmt_node_attr;
@@ -130,23 +120,11 @@ typedef struct Node {
   };
 } Node;
 
-void addChildNode(Node*, Node**, Node*);
-
 void createBinaryExpr(OpType, Node*, Node*, Node*);
 
 void createUnaryExpr(OpType, Node*, Node*);
 
 Node* createRefStrip(Node*, Node*);
-
-void createIfStatement(Node*, Node*, Node*, Node*);
-
-void createWhileLoop(Node*, Node*, Node*);
-
-void createStmtList(StmtList*, Node*);
-
-void createDeclaration(Node*, VarDescription*);
-
-void appendStmt(StmtList*, StmtList*, StmtList*);
 
 void printAST(Node *, int);
 

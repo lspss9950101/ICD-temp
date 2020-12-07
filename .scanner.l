@@ -10,7 +10,6 @@
 #include <string.h>
 #include "ast.h"
 #include "parser.h"
-
 int fileno(FILE *);
 
 #define YY_USER_ACTION \
@@ -21,12 +20,10 @@ int fileno(FILE *);
 #define MAX_LINE_LENG      256
 #define LIST       strcat(buffer, yytext)
 #define LIST_FLUSH do{ if(opt_list) printf("%s", buffer); *buffer = 0; }while(0)
-#define LOG(TYPE) \
-    do{ LIST; \
-        if(opt_token) \
-        fprintf(stderr, "token(type:%-10s) on line %4d, %3d : %s\n", \
-            #TYPE, line_no, col_no - yyleng + 1, yytext); \
-    } while(0)
+#define LOG(TYPE) do{ LIST; if(opt_token) fprintf(stderr, "token(type:%-10s) on line %4d, %3d : %s\n", #TYPE, line_no,col_no - yyleng + 1, yytext); } while(0)
+#define LOG_COMMENT do{ LIST; } while(0)
+#define LOG_COMMENT_START do{LIST; } while(0)
+#define LOG_COMMENT_END do{ LIST;	} while(0)
 
 #ifdef __cplusplus
 extern "C" int yylex(void);
@@ -35,7 +32,6 @@ extern "C" int yylex(void);
 int opt_list = 1, opt_token = 0;
 int line_no = 1, col_no = 0;
 char buffer[MAX_LINE_LENG];
-
 %}
 
 %option nounput
@@ -67,6 +63,8 @@ W [wW]
 X [xX]
 Y [yY]
 Z [zZ]
+
+%x MULTI_LINE_COMMENT
 
 %%
                              /* v could do something */
@@ -103,7 +101,7 @@ Z [zZ]
 "+"                         {LOG(KEYWORD); return(ADDOP);      }
 "-"                         {LOG(KEYWORD); return(SUBOP);      }
 "*"                         {LOG(KEYWORD); return(MULOP);      }
-"/"                         {LOG(KEYWORD); return(DIVOP);      }
+"/"							            {LOG(KEYWORD); return(DIVOP);      }
 ">"                         {LOG(KEYWORD); return(GTOP);       }
 "<"                         {LOG(KEYWORD); return(LTOP);       }
 "="                         {LOG(KEYWORD); return(EQOP);       }
@@ -112,19 +110,50 @@ Z [zZ]
 "!="                        {LOG(KEYWORD); return(NEQOP);      }
 
   /* define identifier here */
+([a-z][A-Za-z0-9_]*[A-Za-z0-9]|[a-z])	{
+  LOG(IDENTIFIER);
+  yylval.text = strdup(yytext);
+  return(IDENTIFIER);
+}
 
   /* define INTEGERNUM, REALNUMBER, SCIENTIFIC here */
+([0-9]+)([.][0-9]+)?{E}[+-]?[0-9]+ {
+  LOG(NUMBER);
+  yylval.dval = atof(yytext);
+  return(SCIENTIFIC);
+}
+[0-9]*						{
+  LOG(NUMBER);
+  yylval.val = atoi(yytext);
+  return(INTEGERNUM);
+}
+[0-9]+[.][0-9]+				{
+  LOG(NUMBER);
+  yylval.dval = atof(yytext);
+  return(REALNUMBER);
+}
 
   /* define single/multiple line comment here */
+"//".*						{LOG_COMMENT;	}
+"//".*\n					{LOG_COMMENT; LIST_FLUSH; line_no++, col_no=0;	}
+"/*"						{LOG_COMMENT_START; BEGIN(MULTI_LINE_COMMENT);	}
+<MULTI_LINE_COMMENT>.		{LIST; LIST_FLUSH;	}
+<MULTI_LINE_COMMENT>\n		{LIST; LIST_FLUSH; line_no++, col_no = 0;	}
+<MULTI_LINE_COMMENT>"*/"	{LOG_COMMENT_END; BEGIN(INITIAL);	}
+<MULTI_LINE_COMMENT>"*/"\n	{LOG_COMMENT_END; LIST_FLUSH; BEGIN(INITIAL); line_no++, col_no=0;	}
 
   /* define string constant (LITERALSTR) here */
+\"[^"]*\"					{
+  LOG(STRING);
+  yylval.text = strdup(yytext);
+  return(LITERALSTR);
+}
 
   /* define pragma here */
-
- /*
-    yylval.text = strdup, strndup ... (yytext)
-    yylval.dval = atoi, atof, strtod, strtol ... (yytext)
- */
+\#[ ]*"pragma"[ ]+"list"[ ]+"on"	{opt_list = 1; LIST; LIST_FLUSH;	}
+\#[ ]*"pragma"[ ]+"list"[ ]+"off"	{opt_list = 0; LIST; LIST_FLUSH;	}
+\#[ ]*"pragma"[ ]+"token"[ ]+"on" {opt_token = 1; LIST; LIST_FLUSH;     }
+\#[ ]*"pragma"[ ]+"token"[ ]+"off" {opt_token = 0; LIST; LIST_FLUSH;     }
 
 [ \t\f\r]    LIST;
 
@@ -132,6 +161,10 @@ Z [zZ]
   LIST;
   LIST_FLUSH;
   line_no++, col_no = 0;
-}
+} 
 
 .  { LIST; fprintf(stderr, "[ERROR] line %4d:%3d lexical analyzer error %s\n", line_no, col_no-(int)yyleng+1, yytext); }
+
+%%
+
+int yywrap() { fclose(yyin), exit(0); }
