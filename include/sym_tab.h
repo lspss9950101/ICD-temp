@@ -12,23 +12,29 @@ typedef struct SymEntry {
     char *id;
     struct SymEntry *next;
     int func_set;
+    Node *func_node;
+    int redef;
 } SymEntry;
 
-int checkTable(SymEntry*, char*, int);
+int checkTable(SymEntry*, char*, int, int);
 
-int arrayTypeCmp(VarType*, VarType*);
+int typeCmp(VarType*, VarType*);
 
 VarType* getVarType(SymEntry*, char*);
 
 VarType* getPrimaryType(VarType*);
 
-void setFunc(SymEntry*, char*);
+int setFunc(SymEntry*, char*);
 
-int isFuncSet(SymEntry*, char*);
+int isFuncSet(SymEntry*, Node*);
 
-int insertEntry(SymEntry**, char*, VarType*, int);
+int insertVarEntry(SymEntry**, char*, VarType*, int);
+
+int insertFuncEntry(SymEntry**, char*, Node*, VarType*, int);
 
 int deleteEntry(SymEntry**, int);
+
+void getVarName(VarType*, char*);
 
 void printSymTab(SymEntry *);
 

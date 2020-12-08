@@ -607,11 +607,11 @@ static const yytype_int16 yyrline[] =
 {
        0,    80,    80,   101,   108,   116,   125,   127,   130,   139,
      144,   149,   155,   162,   164,   175,   186,   198,   201,   203,
-     209,   219,   220,   222,   229,   232,   237,   248,   255,   258,
-     274,   289,   291,   305,   309,   311,   320,   330,   333,   338,
-     341,   346,   353,   356,   362,   365,   371,   374,   380,   383,
-     392,   395,   404,   408,   413,   419,   420,   422,   423,   425,
-     426,   427,   428,   429,   430,   432,   441,   450
+     209,   219,   220,   222,   230,   233,   238,   249,   256,   259,
+     275,   290,   292,   306,   310,   312,   321,   331,   334,   339,
+     342,   347,   354,   357,   363,   366,   372,   375,   381,   384,
+     393,   396,   405,   409,   414,   420,   421,   423,   424,   426,
+     427,   428,   429,   430,   431,   433,   442,   451
 };
 #endif
 
@@ -1737,7 +1737,7 @@ yyreduce:
                                                                               {
         (yyval.node) = malloc(sizeof(Node));
         (yyval.node)->nt = SubprogramDeclarationNode;
-        (yyval.node)->loc = concat((yylsp[-4]), (yylsp[0]));
+        (yyval.node)->loc = concat((yylsp[-5]), (yylsp[0]));
         (yyval.node)->prog_node_attr.id = (yyvsp[-4].text);
         
         (yyval.node)->prog_node_attr.type = malloc(sizeof(VarType));
@@ -1810,29 +1810,30 @@ yyreduce:
     (yyval.node)->nt = CompoundStatementListNode;
     (yyval.node)->loc = concat((yylsp[-2]), (yylsp[0]));
     (yyval.node)->compound_stmt_node_attr.stmts = (yyvsp[-1].node);
+    (yyval.node)->compound_stmt_node_attr.next = NULL;
 }
-#line 1815 "obj/parser.c"
+#line 1816 "obj/parser.c"
     break;
 
   case 24:
-#line 229 "parser.y"
+#line 230 "parser.y"
                            {
         (yyval.node) = (yyvsp[0].node);
     }
-#line 1823 "obj/parser.c"
+#line 1824 "obj/parser.c"
     break;
 
   case 25:
-#line 232 "parser.y"
+#line 233 "parser.y"
                                          {
         (yyval.node) = (yyvsp[-2].node);
         (yyval.node)->compound_stmt_node_attr.next = (yyvsp[0].node);
     }
-#line 1832 "obj/parser.c"
+#line 1833 "obj/parser.c"
     break;
 
   case 26:
-#line 237 "parser.y"
+#line 238 "parser.y"
                                            {
         Node *expr= malloc(sizeof(Node));
         createBinaryExpr(OP_ASSIGN, expr, (yyvsp[-2].node), (yyvsp[0].node));
@@ -1844,11 +1845,11 @@ yyreduce:
         (yyval.node)->compound_stmt_node_attr.stmts = expr;
         (yyval.node)->compound_stmt_node_attr.next = NULL;
     }
-#line 1848 "obj/parser.c"
+#line 1849 "obj/parser.c"
     break;
 
   case 27:
-#line 248 "parser.y"
+#line 249 "parser.y"
                           {
         (yyval.node) = malloc(sizeof(Node));
         (yyval.node)->nt = CompoundStatementListNode;
@@ -1856,19 +1857,19 @@ yyreduce:
         (yyval.node)->compound_stmt_node_attr.stmts = (yyvsp[0].node);
         (yyval.node)->compound_stmt_node_attr.next = NULL;
     }
-#line 1860 "obj/parser.c"
+#line 1861 "obj/parser.c"
     break;
 
   case 28:
-#line 255 "parser.y"
+#line 256 "parser.y"
                          {
         (yyval.node) = (yyvsp[0].node);
     }
-#line 1868 "obj/parser.c"
+#line 1869 "obj/parser.c"
     break;
 
   case 29:
-#line 258 "parser.y"
+#line 259 "parser.y"
                                                   {
         Node *expr = malloc(sizeof(Node));
         expr->nt = IfNode;
@@ -1885,11 +1886,11 @@ yyreduce:
         (yyval.node)->compound_stmt_node_attr.stmts = expr;
         (yyval.node)->compound_stmt_node_attr.next = NULL;
     }
-#line 1889 "obj/parser.c"
+#line 1890 "obj/parser.c"
     break;
 
   case 30:
-#line 274 "parser.y"
+#line 275 "parser.y"
                                     {
         Node *expr = malloc(sizeof(Node));
         expr->nt = WhileNode;
@@ -1905,17 +1906,17 @@ yyreduce:
         (yyval.node)->compound_stmt_node_attr.stmts = expr;
         (yyval.node)->compound_stmt_node_attr.next = NULL;
     }
-#line 1909 "obj/parser.c"
+#line 1910 "obj/parser.c"
     break;
 
   case 31:
-#line 289 "parser.y"
+#line 290 "parser.y"
       { (yyval.node) = NULL; }
-#line 1915 "obj/parser.c"
+#line 1916 "obj/parser.c"
     break;
 
   case 32:
-#line 291 "parser.y"
+#line 292 "parser.y"
                            {
         (yyval.node) = malloc(sizeof(Node));
         (yyval.node)->nt = ExprNode;
@@ -1929,26 +1930,26 @@ yyreduce:
             (yyval.node)->loc = concat((yylsp[-1]), (yyvsp[0].node)->loc);
         } 
     }
-#line 1933 "obj/parser.c"
+#line 1934 "obj/parser.c"
     break;
 
   case 33:
-#line 305 "parser.y"
+#line 306 "parser.y"
                                      {
         (yyval.node) = (yyvsp[-2].node);
         (yyval.node)->expression.next = (yyvsp[0].node);
     }
-#line 1942 "obj/parser.c"
+#line 1943 "obj/parser.c"
     break;
 
   case 34:
-#line 309 "parser.y"
+#line 310 "parser.y"
       { (yyval.node) = NULL; }
-#line 1948 "obj/parser.c"
+#line 1949 "obj/parser.c"
     break;
 
   case 35:
-#line 311 "parser.y"
+#line 312 "parser.y"
                                  {
         (yyval.node) = malloc(sizeof(Node));
         (yyval.node)->nt = ExprNode;
@@ -1958,11 +1959,11 @@ yyreduce:
         (yyval.node)->expression.func.args = NULL;
         (yyval.node)->expression.next = NULL;
     }
-#line 1962 "obj/parser.c"
+#line 1963 "obj/parser.c"
     break;
 
   case 36:
-#line 320 "parser.y"
+#line 321 "parser.y"
                                                {
         (yyval.node) = malloc(sizeof(Node));
         (yyval.node)->nt = ExprNode;
@@ -1972,118 +1973,118 @@ yyreduce:
         (yyval.node)->expression.func.args = (yyvsp[-1].node);
         (yyval.node)->expression.next = NULL;
     }
-#line 1976 "obj/parser.c"
+#line 1977 "obj/parser.c"
     break;
 
   case 37:
-#line 330 "parser.y"
+#line 331 "parser.y"
                              {
         (yyval.node) = (yyvsp[0].node);
     }
-#line 1984 "obj/parser.c"
+#line 1985 "obj/parser.c"
     break;
 
   case 38:
-#line 333 "parser.y"
+#line 334 "parser.y"
                                        {
         (yyval.node) = (yyvsp[-2].node);
         (yyval.node)->expression.next = (yyvsp[0].node);
     }
-#line 1993 "obj/parser.c"
+#line 1994 "obj/parser.c"
     break;
 
   case 39:
-#line 338 "parser.y"
+#line 339 "parser.y"
                             {
         (yyval.node) = (yyvsp[0].node);
     }
-#line 2001 "obj/parser.c"
+#line 2002 "obj/parser.c"
     break;
 
   case 40:
-#line 341 "parser.y"
+#line 342 "parser.y"
                                         {
         (yyval.node) = malloc(sizeof(Node));
         createBinaryExpr(OP_AND, (yyval.node), (yyvsp[-2].node), (yyvsp[0].node));
         (yyval.node)->loc = (yylsp[-1]);
     }
-#line 2011 "obj/parser.c"
+#line 2012 "obj/parser.c"
     break;
 
   case 41:
-#line 346 "parser.y"
+#line 347 "parser.y"
                                        {
         (yyval.node) = malloc(sizeof(Node));
         createBinaryExpr(OP_OR, (yyval.node), (yyvsp[-2].node), (yyvsp[0].node));
         (yyval.node)->loc = (yylsp[-1]);
     }
-#line 2021 "obj/parser.c"
+#line 2022 "obj/parser.c"
     break;
 
   case 42:
-#line 353 "parser.y"
+#line 354 "parser.y"
                                    {
         (yyval.node) = (yyvsp[0].node);
     }
-#line 2029 "obj/parser.c"
+#line 2030 "obj/parser.c"
     break;
 
   case 43:
-#line 356 "parser.y"
+#line 357 "parser.y"
                                                 {
         (yyval.node) = malloc(sizeof(Node));
         createBinaryExpr((yyvsp[-1].op_type), (yyval.node), (yyvsp[-2].node), (yyvsp[0].node));
         (yyval.node)->loc = (yylsp[-1]);
     }
-#line 2039 "obj/parser.c"
+#line 2040 "obj/parser.c"
     break;
 
   case 44:
-#line 362 "parser.y"
+#line 363 "parser.y"
                          {
         (yyval.node) = (yyvsp[0].node);
     }
-#line 2047 "obj/parser.c"
+#line 2048 "obj/parser.c"
     break;
 
   case 45:
-#line 365 "parser.y"
+#line 366 "parser.y"
                                    {
         (yyval.node) = malloc(sizeof(Node));
         createBinaryExpr((yyvsp[-1].op_type), (yyval.node), (yyvsp[-2].node), (yyvsp[0].node));
         (yyval.node)->loc = (yylsp[-1]);
     }
-#line 2057 "obj/parser.c"
+#line 2058 "obj/parser.c"
     break;
 
   case 46:
-#line 371 "parser.y"
+#line 372 "parser.y"
               {
         (yyval.node) = (yyvsp[0].node);
     }
-#line 2065 "obj/parser.c"
+#line 2066 "obj/parser.c"
     break;
 
   case 47:
-#line 374 "parser.y"
+#line 375 "parser.y"
                         {
         (yyval.node) = malloc(sizeof(Node));
         createBinaryExpr((yyvsp[-1].op_type), (yyval.node), (yyvsp[-2].node), (yyvsp[0].node));
         (yyval.node)->loc = (yylsp[-1]);
     }
-#line 2075 "obj/parser.c"
+#line 2076 "obj/parser.c"
     break;
 
   case 48:
-#line 380 "parser.y"
+#line 381 "parser.y"
                   {
         (yyval.node) = (yyvsp[0].node);
     }
-#line 2083 "obj/parser.c"
+#line 2084 "obj/parser.c"
     break;
 
   case 49:
-#line 383 "parser.y"
+#line 384 "parser.y"
                                                {
         (yyval.node) = malloc(sizeof(Node));
         (yyval.node)->nt = ExprNode;
@@ -2093,19 +2094,19 @@ yyreduce:
         (yyval.node)->expression.func.args = (yyvsp[-1].node);
         (yyval.node)->expression.next = NULL;
     }
-#line 2097 "obj/parser.c"
+#line 2098 "obj/parser.c"
     break;
 
   case 50:
-#line 392 "parser.y"
+#line 393 "parser.y"
           {
         (yyval.node) = (yyvsp[0].node);
     }
-#line 2105 "obj/parser.c"
+#line 2106 "obj/parser.c"
     break;
 
   case 51:
-#line 395 "parser.y"
+#line 396 "parser.y"
                  {
         (yyval.node) = malloc(sizeof(Node));
         (yyval.node)->nt = ExprNode;
@@ -2115,100 +2116,100 @@ yyreduce:
         (yyval.node)->expression.primary.text = (yyvsp[0].text);
         (yyval.node)->expression.next = NULL;
     }
-#line 2119 "obj/parser.c"
+#line 2120 "obj/parser.c"
     break;
 
   case 52:
-#line 404 "parser.y"
+#line 405 "parser.y"
                                {
         (yyval.node) = (yyvsp[-1].node);
         (yyval.node)->loc = concat((yylsp[-2]), (yylsp[0]));
     }
-#line 2128 "obj/parser.c"
+#line 2129 "obj/parser.c"
     break;
 
   case 53:
-#line 408 "parser.y"
+#line 409 "parser.y"
                  {
         (yyval.node) = malloc(sizeof(Node));
         createUnaryExpr(OP_NOT, (yyval.node), (yyvsp[0].node));
         (yyval.node)->loc = (yylsp[-1]);
     }
-#line 2138 "obj/parser.c"
+#line 2139 "obj/parser.c"
     break;
 
   case 54:
-#line 413 "parser.y"
+#line 414 "parser.y"
                    {
         (yyval.node) = malloc(sizeof(Node));
         createUnaryExpr(OP_NEG, (yyval.node), (yyvsp[0].node));
         (yyval.node)->loc = (yylsp[-1]);
     }
-#line 2148 "obj/parser.c"
+#line 2149 "obj/parser.c"
     break;
 
   case 55:
-#line 419 "parser.y"
+#line 420 "parser.y"
               { (yyval.op_type) = OP_ADD; }
-#line 2154 "obj/parser.c"
+#line 2155 "obj/parser.c"
     break;
 
   case 56:
-#line 420 "parser.y"
+#line 421 "parser.y"
             { (yyval.op_type) = OP_SUB; }
-#line 2160 "obj/parser.c"
+#line 2161 "obj/parser.c"
     break;
 
   case 57:
-#line 422 "parser.y"
+#line 423 "parser.y"
               { (yyval.op_type) = OP_MUL; }
-#line 2166 "obj/parser.c"
+#line 2167 "obj/parser.c"
     break;
 
   case 58:
-#line 423 "parser.y"
+#line 424 "parser.y"
             { (yyval.op_type) = OP_DIV; }
-#line 2172 "obj/parser.c"
+#line 2173 "obj/parser.c"
     break;
 
   case 59:
-#line 425 "parser.y"
+#line 426 "parser.y"
              { (yyval.op_type) = OP_LT; }
-#line 2178 "obj/parser.c"
+#line 2179 "obj/parser.c"
     break;
 
   case 60:
-#line 426 "parser.y"
+#line 427 "parser.y"
            { (yyval.op_type) = OP_GT; }
-#line 2184 "obj/parser.c"
+#line 2185 "obj/parser.c"
     break;
 
   case 61:
-#line 427 "parser.y"
+#line 428 "parser.y"
            { (yyval.op_type) = OP_EQ; }
-#line 2190 "obj/parser.c"
+#line 2191 "obj/parser.c"
     break;
 
   case 62:
-#line 428 "parser.y"
+#line 429 "parser.y"
             { (yyval.op_type) = OP_LET; }
-#line 2196 "obj/parser.c"
+#line 2197 "obj/parser.c"
     break;
 
   case 63:
-#line 429 "parser.y"
+#line 430 "parser.y"
             { (yyval.op_type) = OP_GET; }
-#line 2202 "obj/parser.c"
+#line 2203 "obj/parser.c"
     break;
 
   case 64:
-#line 430 "parser.y"
+#line 431 "parser.y"
             { (yyval.op_type) = OP_NEQ; }
-#line 2208 "obj/parser.c"
+#line 2209 "obj/parser.c"
     break;
 
   case 65:
-#line 432 "parser.y"
+#line 433 "parser.y"
                  {
         (yyval.node) = malloc(sizeof(Node));
         (yyval.node)->nt = ExprNode;
@@ -2218,11 +2219,11 @@ yyreduce:
         (yyval.node)->expression.primary.val = (yyvsp[0].val);
         (yyval.node)->expression.next = NULL;
     }
-#line 2222 "obj/parser.c"
+#line 2223 "obj/parser.c"
     break;
 
   case 66:
-#line 441 "parser.y"
+#line 442 "parser.y"
                  {
         (yyval.node) = malloc(sizeof(Node));
         (yyval.node)->nt = ExprNode;
@@ -2232,11 +2233,11 @@ yyreduce:
         (yyval.node)->expression.primary.dval = (yyvsp[0].dval);
         (yyval.node)->expression.next = NULL;
     }
-#line 2236 "obj/parser.c"
+#line 2237 "obj/parser.c"
     break;
 
   case 67:
-#line 450 "parser.y"
+#line 451 "parser.y"
                  {
         (yyval.node) = malloc(sizeof(Node));
         (yyval.node)->nt = ExprNode;
@@ -2246,11 +2247,11 @@ yyreduce:
         (yyval.node)->expression.primary.dval = (yyvsp[0].dval);
         (yyval.node)->expression.next = NULL;
     }
-#line 2250 "obj/parser.c"
+#line 2251 "obj/parser.c"
     break;
 
 
-#line 2254 "obj/parser.c"
+#line 2255 "obj/parser.c"
 
       default: break;
     }
@@ -2488,7 +2489,7 @@ yyreturn:
 #endif
   return yyresult;
 }
-#line 460 "parser.y"
+#line 461 "parser.y"
 
 
 void yyerror(const char *msg) {
@@ -2510,7 +2511,7 @@ int main(int argc, const char *argv[]) {
     yyin = fp;
     yyparse();
     
-    //traverseAST(root);
-    printAST(root, 0);
+    traverseAST(root);
+    //printAST(root, 0);
     return 0;
 }

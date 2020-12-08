@@ -88,6 +88,10 @@ struct ExprNodeAttr {
     struct {
       OpType op;
       struct Node *left, *right;
+      struct {
+        char *id;
+        LocType loc;
+      } array;
     } binary;
     struct {
       char *id;

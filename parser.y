@@ -175,7 +175,7 @@ subprogram_declaration : subprogram_head
 subprogram_head : FUNCTION IDENTIFIER arguments COLON standard_type SEMICOLON {
         $$ = malloc(sizeof(Node));
         $$->nt = SubprogramDeclarationNode;
-        $$->loc = concat(@2, @6);
+        $$->loc = concat(@1, @6);
         $$->prog_node_attr.id = $<text>2;
         
         $$->prog_node_attr.type = malloc(sizeof(VarType));
@@ -224,6 +224,7 @@ compound_statement : PBEGIN statement_list END {
     $$->nt = CompoundStatementListNode;
     $$->loc = concat(@1, @3);
     $$->compound_stmt_node_attr.stmts = $<node>2;
+    $$->compound_stmt_node_attr.next = NULL;
 }
 
 statement_list : statement {
@@ -478,7 +479,7 @@ int main(int argc, const char *argv[]) {
     yyin = fp;
     yyparse();
     
-    //traverseAST(root);
-    printAST(root, 0);
+    traverseAST(root);
+    //printAST(root, 0);
     return 0;
 }

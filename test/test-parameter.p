@@ -14,6 +14,6 @@ END;
 
 BEGIN
     a := 3+tt;
-    ss(a, tt, 0.5);
+    //ss(a, tt, 0.5);
     ss(tt, tt)  // wrong number of parameters
 END.

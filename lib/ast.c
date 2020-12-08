@@ -27,6 +27,8 @@ Node* createRefStrip(Node* id_ref, Node* expr_list) {
         new_node->expression.binary.op = OP_ARRAY_ACCESS;
         new_node->expression.binary.left = top_node;
         new_node->expression.binary.right = expr_list;
+        new_node->expression.binary.array.id = id_ref->expression.ref.id;
+        new_node->expression.binary.array.loc = id_ref->loc;
         new_node->expression.next = NULL;
 
         top_node = new_node;
